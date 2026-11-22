@@ -1,18 +1,23 @@
 package com.devil.aimbot
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import rikka.shizuku.Shizuku
 
 class MainActivity : AppCompatActivity() {
     private val REQ_SCREEN = 1001
     private val REQ_SHIZUKU = 1002
+    private val REQ_NOTIF = 1003
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,9 +28,16 @@ class MainActivity : AppCompatActivity() {
         val tv = TextView(this).apply { text = "Devil Aimbot Engine v1.0\nWaiting..." }
         layout.addView(tv)
 
+        // طلب صلاحية الإشعارات لأندرويد 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
+            }
+        }
+
         val btnShizuku = Button(this).apply { text = "1. Grant Shizuku" }
         btnShizuku.setOnClickListener {
-            if (Shizuku.checkSelfPermission() != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
                 Shizuku.requestPermission(REQ_SHIZUKU)
             } else {
                 Toast.makeText(this, "Shizuku Granted!", Toast.LENGTH_SHORT).show()
@@ -35,7 +47,7 @@ class MainActivity : AppCompatActivity() {
 
         val btnStart = Button(this).apply { text = "2. Start Aimbot" }
         btnStart.setOnClickListener {
-            if (Shizuku.checkSelfPermission() != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Please grant Shizuku first!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }

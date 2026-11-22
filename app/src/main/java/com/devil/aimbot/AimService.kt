@@ -3,6 +3,7 @@ package com.devil.aimbot
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -36,20 +37,37 @@ class AimService : Service() {
     private var isProcessing = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(1, createNotification())
+        val notification = createNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
+        } else {
+            startForeground(1, notification)
+        }
         
         val code = intent?.getIntExtra("code", 0) ?: 0
-        val data = intent?.getParcelableExtra<Intent>("data") ?: return START_NOT_STICKY
+        val data = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra("data", Intent::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableExtra("data")
+        } ?: return START_NOT_STICKY
         
         val pm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         projection = pm.getMediaProjection(code, data)!!
+        
+        // مهم جداً لأندرويد 13+: تسجيل callback للشاشة
+        projection.registerCallback(object : MediaProjection.Callback() {
+            override fun onStop() {
+                stopSelf()
+            }
+        }, Handler(Looper.getMainLooper()))
         
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
         val metrics = wm.currentWindowMetrics.bounds
         screenWidth = metrics.width()
         screenHeight = metrics.height()
 
-        // 1. تجهيز Shizuku Shell لحقن اللمس
+        // 1. تجهيز Shizuku Shell
         try {
             shProcess = Shell.newProcess(arrayOf("sh"), null, null)
             shOutput = shProcess?.outputStream
@@ -66,15 +84,9 @@ class AimService : Service() {
             if (isProcessing) { reader.acquireLatestImage()?.close(); return@setOnImageAvailableListener }
             val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
             isProcessing = true
-            
             executor.execute {
-                try {
-                    processImage(image)
-                } catch (e: Exception) { e.printStackTrace() } 
-                finally {
-                    image.close()
-                    isProcessing = false
-                }
+                try { processImage(image) } catch (e: Exception) { e.printStackTrace() } 
+                finally { image.close(); isProcessing = false }
             }
         }, Handler(Looper.getMainLooper()))
 
@@ -84,7 +96,6 @@ class AimService : Service() {
     private fun processImage(image: android.media.Image) {
         val planes = image.planes
         val buffer = planes[0].buffer
-        
         val bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
         bitmap.copyPixelsFromBuffer(buffer)
 
