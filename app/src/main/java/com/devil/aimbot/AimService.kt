@@ -53,7 +53,7 @@ class AimService : Service() {
         } ?: return START_NOT_STICKY
         
         val pm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        projection = pm.getMediaProjection(code, data)!!
+        projection = pm.getMediaProjection(code, data) ?: return START_NOT_STICKY
         
         // مهم جداً لأندرويد 13+: تسجيل callback للشاشة
         projection.registerCallback(object : MediaProjection.Callback() {
@@ -69,7 +69,7 @@ class AimService : Service() {
 
         // 1. تجهيز Shizuku Shell
         try {
-            shProcess = Shizuku.newProcess(arrayOf("sh"), null, null)
+            try { shProcess = Shizuku.newProcess(arrayOf("sh"), null, null); shOutput = shProcess?.outputStream } catch(e: Exception) { e.printStackTrace() }
             shOutput = shProcess?.outputStream
         } catch (e: Exception) { e.printStackTrace() }
 
