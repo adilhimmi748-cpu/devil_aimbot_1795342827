@@ -15,7 +15,7 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import org.tensorflow.lite.Interpreter
 import rikka.shizuku.ShizukuRemoteProcess
-import rikka.shizuku.Shell
+import rikka.shizuku.Shizuku
 import java.io.FileInputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
@@ -69,7 +69,7 @@ class AimService : Service() {
 
         // 1. تجهيز Shizuku Shell
         try {
-            shProcess = Shell.newProcess(arrayOf("sh"), null, null)
+            shProcess = Shizuku.newProcess(arrayOf("sh"), null, null)
             shOutput = shProcess?.outputStream
         } catch (e: Exception) { e.printStackTrace() }
 
