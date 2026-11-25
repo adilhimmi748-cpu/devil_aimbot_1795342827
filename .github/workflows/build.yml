@@ -18,8 +18,10 @@ jobs:
     - name: Install NDK and CMake
       run: |
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.1.8937393" "cmake;3.22.1" > /dev/null
-    - name: Setup Gradle
+    - name: Setup Gradle (Cache Disabled)
       uses: gradle/actions/setup-gradle@v3
+      with:
+        cache-disabled: true
     - name: Generate Gradle Wrapper
       run: |
         gradle wrapper --gradle-version=8.5
